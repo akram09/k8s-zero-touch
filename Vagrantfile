@@ -2,32 +2,46 @@
 # vi: set ft=ruby :
 
 
+## read environment variables 
+CLUSTER_SUBNET_IP=ENV['CLUSTER_SUBNET_IP']
+WORKERS_PREFIX_NAME=ENV['WORKERS_PREFIX_NAME']
+WORKERS_NUMBER=ENV['WORKERS_NUMBER']
+MASTER_NODE_NAME=ENV['MASTER_NODE_NAME']
+
+
 Vagrant.configure("2") do |config|
 
-  config.
+  # setup default box 
+  config.vm.box = "bento/ubuntu-21.10"
 
+  # activate the check update feature 
+  config.vm.box_check_update = true
 
+  # create the master vm 
+  config.vm.define MASTER_NODE_NAME do |master|
+    master.vm.hostname = MASTER_NODE_NAME
+    master.vm.network "private_network", ip: CLUSTER_SUBNET_IP+'2' 
+    master.vm.provider "virtualbox" do |vb|
+      vb.memory = 4048
+      vb.cpus = 3
+    end
+    # Add scripts to setup the master node 
+    # ....
+  end 
 
-
-
-  config.vm.box = "base"
-
-  # config.vm.network "private_network", ip: "192.168.33.10"
-
-
-  # config.vm.network "public_network"
-
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
-  #
-
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
+  # create the workers nodes 
+  (1..WORKERS_NUMBER).each do |i|
+    # for each worker node 
+    config.vm.define WORKERS_PREFIX_NAME + '#{i}' do |worker|
+      # set the hostname 
+      worker.vm.hostname = WORKERS_PREFIX_NAME + '#{i}'
+      # set the ip address 
+      worker.vm.network "private_network", ip: CLUSTER_SUBNET_IP+'#{i+3}' 
+      # set the memory and cpu 
+      worker.vm.provider "virtualbox" do |vb|
+        vb.memory = 4048
+        vb.cpus = 3
+      end
+    end 
+  end
 end
