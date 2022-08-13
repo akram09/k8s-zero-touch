@@ -17,6 +17,8 @@ Vagrant.configure("2") do |config|
   # activate the check update feature 
   config.vm.box_check_update = true
 
+
+
   # create the master vm 
   config.vm.define MASTER_NODE_NAME do |master|
     master.vm.hostname = MASTER_NODE_NAME
