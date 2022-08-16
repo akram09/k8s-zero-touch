@@ -28,6 +28,7 @@ Vagrant.configure("2") do |config|
       vb.cpus = 3
     end
     # Add scripts to setup the master node 
+#    master.vm.provision "shell", path: "scripts/common.sh"
     # ....
   end 
 
@@ -44,6 +45,8 @@ Vagrant.configure("2") do |config|
         vb.memory = 4048
         vb.cpus = 3
       end
+      # Launch scripts in Virtual Machine 
+#      worker.vm.provision "shell", path: "scripts/common.sh"
     end 
   end
 end
