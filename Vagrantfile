@@ -12,7 +12,7 @@ MASTER_NODE_NAME="master-node"
 Vagrant.configure("2") do |config|
 
   # setup default box 
-  config.vm.box = "bento/ubuntu-21.10"
+  config.vm.box = "bento/ubuntu-20.04"
 
   # activate the check update feature 
   config.vm.box_check_update = true
@@ -28,7 +28,7 @@ Vagrant.configure("2") do |config|
       vb.cpus = 3
     end
     # Add scripts to setup the master node 
-#    master.vm.provision "shell", path: "scripts/common.sh"
+    master.vm.provision "shell", path: "scripts/common.sh"
     # ....
   end 
 
@@ -46,7 +46,7 @@ Vagrant.configure("2") do |config|
         vb.cpus = 3
       end
       # Launch scripts in Virtual Machine 
-#      worker.vm.provision "shell", path: "scripts/common.sh"
+      worker.vm.provision "shell", path: "scripts/common.sh"
     end 
   end
 end

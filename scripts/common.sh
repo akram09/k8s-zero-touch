@@ -11,8 +11,6 @@ sudo swapoff -a
 # keeps the swap off during reboot
 (crontab -l 2>/dev/null; echo "@reboot /sbin/swapoff -a") | crontab - || true
 
-# Update the system 
-sudo apt-get update -y
 
 # Create the .conf file to load the modules at bootup
 cat <<EOF | sudo tee /etc/modules-load.d/crio.conf
@@ -24,10 +22,9 @@ sudo modprobe overlay
 sudo modprobe br_netfilter
 
 # Set up required sysctl params, these persist across reboots.
-cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.ipv4.ip_forward                 = 1
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
 EOF
 
 sudo sysctl --system
@@ -40,13 +37,13 @@ sudo sysctl --system
 # Specify the version of ubuntu
 UBUNTU_VERSION="xUbuntu_20.04"
 # Specify the version of crio 
-CRI-O_VERSION="1.24"
+CRI_O_VERSION="1.24"
 
 
 echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$UBUNTU_VERSION/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRI-O_VERSION}/$UBUNTU_VERSION/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRI-O_VERSION}.list
+echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRI_O_VERSION}/$UBUNTU_VERSION/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRI_O_VERSION}.list
 
-curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:${CRI-O_VERSION}/$UBUNTU_VERSION/Release.key | apt-key add -
+curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:${CRI_O_VERSION}/$UBUNTU_VERSION/Release.key | apt-key add -
 curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$UBUNTU_VERSION/Release.key | apt-key add -
 
 # Install cri 
