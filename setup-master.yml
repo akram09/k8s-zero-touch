@@ -1,0 +1,127 @@
+- name: Kubernetes Master Node Setup Play
+  hosts: all 
+  become: true
+  vars:
+    os: "xUbuntu_20.04"
+    kubernetes_version: "1.24"
+  tasks:
+    # Disabling swap 
+    - name: Disable SWAP [if it exists]  
+      command: "swapoff -a"
+      when: ansible_swaptotal_mb >0
+    # Disabling swap when reboot 
+    - name: Desactivate SWAP from the machine
+      replace:
+        path: /etc/fstab 
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$' 
+        repace: '# \1'
+
+    # Setup container network 
+    - name: Setup host network to enable container network (1/3)
+      copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/crio.conf 
+
+    # Enabling modules 
+    - name: Setup host network to enable container network (2/3)
+      community.general.modprobe:
+        name: "{{ item }}" 
+        with_items:
+          - overlay
+          - br_netfilter
+    - name: Setup host network to enable container network (3/3) 
+      copy:
+        content: |
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+        dest: /etc/sysctl.d/k8s.conf
+    
+    # Sync systctl 
+    - name: Sync sysctl 
+      command: "sysctl --system"
+
+    # Setting up cri repositories
+    - name: Installing Container Runtime cri-o (1/4) [Setup apt repository]
+      apt_repository:
+        repo: "{{ item.repo }}" 
+        filename: "{{ item.file }}"
+        with_items:
+          - {repo: "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /", file: "devel:kubic:libcontainers:stable.list"} 
+          - { repo: "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VERSION/{{os}}/ /", file: "devel:kubic:libcontainers:stable:cri-o:{{kubernetes_version}}.list"}
+
+    # Adding the gpg keys 
+    - name: Installing Container Runtime cri-o (2/4) [Adding gpg keys]
+      apt_key:
+        url: "{{item}}"
+        state: present
+        with_items:
+        - "https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$CRIO_VERSION/{{os}}/Release.key"
+        - "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{os}}/Release.key"
+
+    - name: Installing Container Runtime cri-o (3/4) [Install packages] 
+      apt:
+        update_cache: yes
+        state: present
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - cri-o 
+          - cri-o-runc 
+          - cri-tools
+
+    - name: Installing Container Runtime cri-o (4/4) [Launching the daemon service]
+      service:
+        daemon_reload: yes
+        enabled: yes
+        state: started
+        name: crio
+    # Install required packages 
+    - name: Install base packages 
+      apt:
+        update_cache: yes
+        state: present
+        name: "{{ packages }}"
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+    # Adding the gpg key of kubernetes 
+    - name: Add an apt signing key for Kubernetes
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    # Adding the apt repository of kubernetes 
+    - name: Adding apt repository for Kubernetes
+      apt_repository:
+        repo: deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
+
+    # Install kubernetes 
+    - name: Install Kubernetes binaries
+      apt: 
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - "kubelet={{kubernetes_version}}" 
+          - "kubeadm={{kubernetes_version}}" 
+          - "kubectl={{kubernetes_version}}"   
+    - name: Configure node ip
+      lineinfile:
+        path: /etc/default/kubelet
+        line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
+
+    - name: Restart kubelet
+      service:
+        name: kubelet
+        daemon_reload: yes
+        state: restarted  

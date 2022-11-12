@@ -27,26 +27,27 @@ Vagrant.configure("2") do |config|
       vb.memory = 4048
       vb.cpus = 3
     end
-    # Add scripts to setup the master node 
-    master.vm.provision "shell", path: "scripts/common.sh"
-    # ....
+    master.vm.provision "ansible" do |ansible|
+      ansible.verbose = "v"
+      ansible.playbook = "setup-master.yaml"
+    end
   end 
 
   # create the workers nodes 
-  (1..WORKERS_NUMBER).each do |i|
+  # (1..WORKERS_NUMBER).each do |i|
     # for each worker node 
-    config.vm.define WORKERS_PREFIX_NAME + "#{i}" do |worker|
+    # config.vm.define WORKERS_PREFIX_NAME + "#{i}" do |worker|
       # set the hostname 
-      worker.vm.hostname = WORKERS_PREFIX_NAME + "#{i}"
+      # worker.vm.hostname = WORKERS_PREFIX_NAME + "#{i}"
       # set the ip address 
-      worker.vm.network "private_network", ip: CLUSTER_SUBNET_IP+"#{i+3}" 
+      # worker.vm.network "private_network", ip: CLUSTER_SUBNET_IP+"#{i+3}" 
       # set the memory and cpu 
-      worker.vm.provider "virtualbox" do |vb|
-        vb.memory = 4048
-        vb.cpus = 3
-      end
+      # worker.vm.provider "virtualbox" do |vb|
+        # vb.memory = 4048
+        # vb.cpus = 3
+      # end
       # Launch scripts in Virtual Machine 
-      worker.vm.provision "shell", path: "scripts/common.sh"
-    end 
-  end
+      # worker.vm.provision "shell", path: "scripts/common.sh"
+    # end 
+  # end
 end

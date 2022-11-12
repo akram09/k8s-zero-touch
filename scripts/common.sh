@@ -60,7 +60,7 @@ sudo systemctl enable crio --now
 ##############################################
 
 # Set Kubernetes version 
-KUBERNETES_VERSION=1.24.3
+KUBERNETES_VERSION=1.24
 
 
 sudo apt-get install -y apt-transport-https ca-certificates curl
